@@ -34,6 +34,66 @@ function getDb() {
   return db;
 }
 
+function seedIfEmpty() {
+  const db = getDb();
+  const row = db.prepare("SELECT COUNT(1) as count FROM notes").get() as {
+    count: number;
+  };
+
+  if (row.count > 0) return;
+
+  const now = new Date().toISOString();
+
+  const samples: Array<{
+    id: string;
+    title: string;
+    content: string;
+    tags: string[];
+  }> = [
+    {
+      id: "sample-1",
+      title: "Note App Kickoff",
+      content:
+        "- Goal: note app to capture meetings and decisions.\n- Stack: Next.js + SQLite.\n- MVP: CRUD notes, search, and tags.",
+      tags: ["meeting", "planning", "mvp"],
+    },
+    {
+      id: "sample-2",
+      title: "Sample Meeting Note",
+      content:
+        "Agenda:\n1. Confirm core feature needs.\n2. Decide visual style (light/dark mode).\n3. Deployment plan.\n\nDecisions:\n- Use Nova Notes as working name.\n- Store data locally via SQLite.",
+      tags: ["meeting", "requirements"],
+    },
+    {
+      id: "sample-3",
+      title: "Future Feature Backlog",
+      content:
+        "- Multi-user support and auth.\n- Export notes to Markdown/PDF.\n- Calendar integration for reminders.\n- Color labels per tag.",
+      tags: ["backlog", "idea"],
+    },
+  ];
+
+  const insert = db.prepare(
+    `INSERT INTO notes (id, title, content, tags, created_at, updated_at)
+     VALUES (@id, @title, @content, @tags, @createdAt, @updatedAt)`,
+  );
+
+  const tx = db.transaction(() => {
+    for (const s of samples) {
+      insert.run({
+        id: s.id,
+        title: s.title,
+        content: s.content,
+        tags: JSON.stringify(s.tags),
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  });
+
+  tx();
+}
+
 export type DbNoteRow = {
   id: string;
   title: string;
@@ -45,6 +105,7 @@ export type DbNoteRow = {
 
 export function getAllNotes(): DbNoteRow[] {
   const db = getDb();
+  seedIfEmpty();
   const stmt = db.prepare<[], DbNoteRow>("SELECT * FROM notes ORDER BY updated_at DESC");
   return stmt.all();
 }
