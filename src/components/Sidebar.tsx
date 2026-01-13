@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
   LayoutGrid, 
@@ -12,6 +12,7 @@ import {
   NotebookPen
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { useNotes } from "@/context/NoteContext";
 
 const navItems = [
   { href: "/", icon: LayoutGrid, label: "All Notes" },
@@ -21,6 +22,13 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { addNote } = useNotes();
+
+  const handleCreateNote = () => {
+    const newId = addNote();
+    router.push(`/note/${newId}`);
+  };
 
   return (
     <aside className="w-20 lg:w-64 h-screen border-r border-border/40 bg-background/50 backdrop-blur-xl flex flex-col p-4 fixed left-0 top-0 z-40 transition-all duration-300">
@@ -32,7 +40,7 @@ export function Sidebar() {
       </div>
 
       <div className="mb-6">
-        <Button className="w-full gap-2 justify-start shadow-xl shadow-primary/20" size="lg">
+        <Button onClick={handleCreateNote} className="w-full gap-2 justify-start shadow-xl shadow-primary/20" size="lg">
           <Plus className="w-5 h-5" />
           <span className="hidden lg:block">New Note</span>
         </Button>

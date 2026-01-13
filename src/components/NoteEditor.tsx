@@ -1,25 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ArrowLeft, Clock, Save, MoreVertical, Share2, Star } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Clock, Save, MoreVertical, Share2, Star, Trash } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
+import { useNotes } from "@/context/NoteContext";
 
-export function NoteEditor({ initialData }: { initialData?: any }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [content, setContent] = useState(initialData?.content || "");
+export function NoteEditor({ initialId }: { initialId: string }) {
+  const router = useRouter();
+  const { getNote, updateNote, toggleFavorite, deleteNote } = useNotes();
+  
+  // Fetch note from context
+  const note = getNote(initialId);
+  
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Simulate auto-save
+  // Initialize state when note loads
+  useEffect(() => {
+    if (note) {
+      setTitle(note.title);
+      setContent(note.content);
+    }
+  }, [note]);
+
+  // Auto-save logic
+  const handleSave = useCallback(() => {
+     if (!note) return;
+     setSaving(true);
+     updateNote(initialId, { title, content });
+     setTimeout(() => setSaving(false), 800);
+  }, [note, initialId, title, content, updateNote]);
+
+  // Debounce save
   useEffect(() => {
     const timer = setTimeout(() => {
-        if (title || content) {
-            setSaving(true);
-            setTimeout(() => setSaving(false), 1000);
+        if (note && (title !== note.title || content !== note.content)) {
+            handleSave();
         }
-    }, 2000);
+    }, 1000);
     return () => clearTimeout(timer);
-  }, [title, content]);
+  }, [title, content, note, handleSave]);
+
+  if (!note) {
+      return (
+          <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+              <p>Note not found.</p>
+              <Link href="/"><Button variant="ghost">Go Home</Button></Link>
+          </div>
+      )
+  }
+
+  const handleDelete = () => {
+      deleteNote(initialId);
+      router.push("/");
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)] relative">
@@ -32,21 +69,26 @@ export function NoteEditor({ initialData }: { initialData?: any }) {
             </Link>
             <div className="text-sm text-muted-foreground flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{saving ? "Saving..." : "Saved just now"}</span>
+                <span>{saving ? "Saving..." : "Saved"}</span>
             </div>
         </div>
         
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-                <Star className="w-5 h-5" />
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => toggleFavorite(initialId)}
+                className={note.isFavorite ? "text-yellow-500" : ""}
+            >
+                <Star className={note.isFavorite ? "fill-current" : ""} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleDelete} className="text-destructive hover:text-destructive">
+                <Trash className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="icon">
                 <Share2 className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-                <MoreVertical className="w-5 h-5" />
-            </Button>
-            <Button className="hidden md:flex">Done</Button>
+            <Button onClick={() => router.push("/")} className="hidden md:flex">Done</Button>
         </div>
       </div>
 

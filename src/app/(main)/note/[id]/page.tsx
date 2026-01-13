@@ -1,13 +1,11 @@
-import { NoteEditor } from "@/components/NoteEditor";
+"use client";
 
-// Mock fetching data based on ID
-// In a real app this would be `params` and `async` fetching
-export default function NotePage( { params }: { params: { id: string } } ) {
-  // We can just pass mock data for demonstration
-  const mockNote = {
-    title: "Project Ideas 2024",
-    content: "1. AI Note Taking App\n2. Smart Home Dashboard\n3. Personal Finance Tracker with ML"
-  };
+import { NoteEditor } from "@/components/NoteEditor"; // Updated import
+import { use } from "react";
 
-  return <NoteEditor initialData={mockNote} />;
+export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
+  // In Next.js 15+, params is a Promise. We need to unwrap it.
+  const resolvedParams = use(params);
+  
+  return <NoteEditor initialId={resolvedParams.id} />;
 }
